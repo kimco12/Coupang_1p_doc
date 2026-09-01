@@ -5,11 +5,8 @@
 서버나 백엔드 없이 순수 클라이언트(정적 HTML)에서 동작하며, 업로드한 파일은
 브라우저 밖으로 전송되지 않고 로컬에서만 파싱됩니다.
 
-**바로가기(index.html):** https://kimco12.github.io/Coupang_1p_doc-pages/
+**바로가기(index.html):** https://kimco12.github.io/Coupang_1p_doc/
 
-> 이 저장소(Coupang_1p_doc)는 비공개(private)이며 백업용입니다. 실제 화면은 index.html만
-> 담긴 별도의 공개 저장소 `Coupang_1p_doc-pages`로 배포되어 위 링크로만 볼 수 있습니다.
->
 > 대시보드 안내문구에도 있듯, 발주 보고서 등 자동 산출된 수치는 담당자 검토 후 사용하세요.
 
 ## 사용 방법
