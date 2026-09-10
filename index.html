@@ -530,7 +530,9 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
                 <th>확정수량</th>
                 <th>미확정수량</th>
                 <th title="확정수량 중 이미 창고에 입고 완료된 수량 — 현재재고에 이미 반영되어 있습니다">입고완료</th>
+                <th title="확정수량 - 입고완료 = 앞으로 더 들어올 확정 물량">남은 입고수량</th>
                 <th title="확정수량 중 아직 입고되지 않은 잔량 기준 시뮬레이션 결과 (입고완료분은 현재재고에 이미 반영되어 있어 제외하고 계산)">입고 후 대응</th>
+                <th title="확정수량이 입고예정일에 전부 들어와도 DOC 14일 미만이면, 14일을 채우는 데 필요한 추가 발주 수량">추가발주 필요수량</th>
                 <th>상태</th>
               </tr>
             </thead>
@@ -1427,7 +1429,7 @@ function simulateStock(startStock, avg, batchMap, todayStr) {
     cursor.setDate(cursor.getDate() + 1);
   }
   const docAfterArrival = avg > 0 ? Math.round(stockAfterLastBatch / avg) : null;
-  return { stockoutDate, docAfterArrival };
+  return { stockoutDate, docAfterArrival, stockAfterLastBatch };
 }
 
 function buildPOAnalysis() {
@@ -1452,10 +1454,14 @@ function buildPOAnalysis() {
       pendingConfirmedTotal += pending;
     });
 
-    let sim = null, needMoreOrder = false;
+    let sim = null, needMoreOrder = false, additionalOrderQty = 0;
     if (sku && avg > 0) {
       sim = simulateStock(currentStock, avg, batchMap, todayStr);
       needMoreOrder = sim.stockoutDate !== null || (sim.docAfterArrival !== null && sim.docAfterArrival <= PO_MIN_DOC);
+      // 확정수량이 전부 들어와도 PO_MIN_DOC(14일)치가 안 되면, 그 부족분만큼을 "추가 발주 필요수량"으로 제안
+      if (needMoreOrder) {
+        additionalOrderQty = Math.ceil(Math.max(avg * PO_MIN_DOC - sim.stockAfterLastBatch, 0));
+      }
     }
 
     // 확정은 됐는데 입고예정일이 이미 지났고 아직 입고 안 된 물량 — 물류 지연 확인용
@@ -1499,6 +1505,7 @@ function buildPOAnalysis() {
       stockout_date_sim: sim ? sim.stockoutDate : null,
       doc_after_arrival: sim ? sim.docAfterArrival : null,
       need_more_order: needMoreOrder,
+      additional_order_qty: additionalOrderQty,
       po_status,
       rows: g.rows,
     };
@@ -1582,6 +1589,9 @@ function renderPOAll() {
       : d.stockout_date_sim ? `<span style="color:var(--red);font-weight:700">${d.stockout_date_sim} 품절위험</span>`
       : d.avg_daily_outbound === 0 ? '출고없음'
       : (d.doc_after_arrival != null ? `${d.doc_after_arrival}일` : '—');
+    const addOrderTxt = d.additional_order_qty > 0
+      ? `<span style="color:var(--orange);font-weight:700">+${d.additional_order_qty.toLocaleString()}개</span>`
+      : '—';
 
     return `<tr class="po-row" data-sku="${String(d.sku_id).replace(/"/g,'&quot;')}">
       <td class="td-mono">${escapeHtml(d.sku_id)}</td>
@@ -1595,10 +1605,12 @@ function renderPOAll() {
       <td class="td-mono" style="text-align:right">${d.confirmed_total.toLocaleString()}</td>
       <td class="td-mono" style="text-align:right${d.unconfirmed_total > 0 ? ';color:var(--red);font-weight:700' : ''}">${d.unconfirmed_total.toLocaleString()}</td>
       <td class="td-mono" style="text-align:right;color:var(--green)">${d.received_total.toLocaleString()}</td>
+      <td class="td-mono" style="text-align:right">${d.pending_confirmed_total.toLocaleString()}</td>
       <td>${respTxt}</td>
+      <td>${addOrderTxt}</td>
       <td>${badgeHtml[d.po_status]}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="13" class="empty">데이터 없음</td></tr>`;
+  }).join('') || `<tr><td colspan="15" class="empty">데이터 없음</td></tr>`;
 
   const porp = document.getElementById('po-report-panel');
   if (porp.style.display === 'block') document.getElementById('po-report-box').textContent = buildPOReport();
@@ -1667,7 +1679,8 @@ function buildPOReport() {
   const lineNeedMore = d => {
     const docTxt = d.doc_after_arrival !== null ? `DOC ${d.doc_after_arrival}일` : 'DOC 계산불가';
     const stockoutTxt = d.stockout_date_sim ? `품절예상 ${d.stockout_date_sim}` : '';
-    return `  · [${d.sku_id}] ${d.sku_name} → ${docTxt}${stockoutTxt ? ' · ' + stockoutTxt : ''} ⇒ 발주 추가 검토 (미입고확정 ${d.pending_confirmed_total.toLocaleString()}개)`;
+    const addTxt = d.additional_order_qty > 0 ? ` ⇒ 추가발주 ${d.additional_order_qty.toLocaleString()}개 권장(DOC ${PO_MIN_DOC}일 기준)` : ' ⇒ 발주 추가 검토';
+    return `  · [${d.sku_id}] ${d.sku_name} → ${docTxt}${stockoutTxt ? ' · ' + stockoutTxt : ''}${addTxt} (미입고확정 ${d.pending_confirmed_total.toLocaleString()}개)`;
   };
   const lineNoOrder = d =>
     `  · [${d.sku_id}] ${d.sku_name} — DOC ${d.doc_days ?? '품절'}일 · 품절예상 ${d.stockout_expected_date ?? '-'}`;
