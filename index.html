@@ -14,6 +14,7 @@
   --red:#ef4444;--orange:#f97316;--green:#22c55e;--teal:#14b8a6;--purple:#a855f7;
   --red-bg:rgba(239,68,68,.12);--orange-bg:rgba(249,115,22,.12);
   --green-bg:rgba(34,197,94,.10);--teal-bg:rgba(20,184,166,.12);--purple-bg:rgba(168,85,247,.12);
+  --name-w:220px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:13px;line-height:1.5;height:100vh;overflow:hidden}
@@ -46,6 +47,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .btn-print{padding:6px 14px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
 .btn-excel{padding:6px 14px;background:linear-gradient(90deg,var(--green),var(--teal));border:none;border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
 .btn-report{padding:6px 14px;background:var(--bg3);border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-exclude{padding:6px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-exclude:hover{border-color:var(--text2);color:var(--text)}
 
 /* ── 발주 보고서 패널 ── */
 #report-panel{display:none;margin-bottom:12px;flex-shrink:0;background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -139,7 +142,12 @@ tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:rgba(79,110,247,.04)}
 tbody td{padding:7px 12px;color:var(--text);white-space:nowrap}
 .td-mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2)}
-.td-name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.td-name{display:flex;align-items:center;gap:4px;max-width:var(--name-w)}
+.td-name-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.excl-btn{flex:none;background:none;border:none;cursor:pointer;font-size:11px;opacity:.35;padding:0}
+.excl-btn:hover{opacity:1}
+.namew-control{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);white-space:nowrap}
+.namew-slider{width:90px;accent-color:var(--accent);cursor:pointer}
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
 .badge-품절{background:rgba(192,132,252,.15);color:#c084fc}
 .badge-위험{background:var(--red-bg);color:var(--red)}
@@ -199,6 +207,41 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
 .trend-stat .l{font-size:10px;color:var(--text2)}
 .trend-stat .v{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-top:2px}
 
+/* ── 최상단 뷰 전환 (DOC 현황 / 입고 예정 체크) ── */
+#main-tabs{display:flex;gap:8px;margin-bottom:12px;flex-shrink:0}
+.main-tab-btn{padding:8px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit;font-weight:600}
+.main-tab-btn:hover{border-color:var(--accent);color:var(--text)}
+.main-tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+#doc-view{display:flex;flex-direction:column;flex:1;min-height:0}
+#po-view{display:none;flex-direction:column;flex:1;min-height:0}
+.kpi-val.purple{color:var(--purple)}
+
+/* ── 입고 예정 체크 (발주 대응) ── */
+.po-upload-screen{display:flex;justify-content:center;padding:36px 0;flex:1}
+.po-upload-zone{max-width:480px;height:fit-content}
+.po-search-input{padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;outline:none;min-width:240px}
+.po-search-input:focus{border-color:var(--accent)}
+.po-noorder-box{margin-bottom:12px;background:var(--bg2);border:1px solid var(--purple);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.po-badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
+.po-badge-both{background:var(--red-bg);color:var(--red)}
+.po-badge-unconfirmed{background:var(--orange-bg);color:var(--orange)}
+.po-badge-needmore{background:var(--purple-bg);color:var(--purple)}
+.po-badge-ok{background:var(--green-bg);color:var(--green)}
+.po-badge-nodata{background:var(--bg3);color:var(--text2)}
+#po-detail-modal{display:none;position:fixed;inset:0;z-index:50;background:rgba(8,9,14,.72);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:28px}
+#po-detail-modal.open{display:flex}
+#exclude-modal{display:none;position:fixed;inset:0;z-index:50;background:rgba(8,9,14,.72);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:28px}
+#exclude-modal.open{display:flex}
+.exclude-add-row{display:flex;gap:8px;margin-bottom:10px}
+.exclude-add-row input{flex:1;min-width:0}
+.exclude-search-results{display:none;flex-direction:column;gap:3px;margin-bottom:12px;max-height:220px;overflow-y:auto;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px}
+.exclude-result-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer}
+.exclude-result-item:hover{background:rgba(79,110,247,.14)}
+.exclude-result-item.already{opacity:.45;cursor:default}
+.exclude-result-item .spike-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exclude-result-add{font-size:11px;color:var(--accent);white-space:nowrap;flex:none}
+.exclude-result-already{font-size:11px;color:var(--text2);white-space:nowrap;flex:none}
+
 @media print{
   body{background:#fff!important;color:#000!important}
   html,body{height:auto!important;overflow:visible!important}
@@ -252,10 +295,17 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
       <button class="btn-ai" onclick="showInsights()">📊 입고·급상승 분석</button>
       <button class="btn-excel" onclick="downloadExcel()">⬇ 엑셀 다운로드</button>
       <button class="btn-print" onclick="window.print()">🖨 인쇄</button>
+      <button class="btn-exclude" id="btn-exclude" onclick="openExcludeManager()">🚫 제외 SKU 관리</button>
       <button class="btn-reset" onclick="resetDashboard()">↩ 파일 변경</button>
     </div>
   </div>
 
+  <div id="main-tabs">
+    <button class="main-tab-btn active" data-v="doc" onclick="setMainView('doc')">📦 DOC 현황</button>
+    <button class="main-tab-btn" data-v="po" onclick="setMainView('po')">🚚 입고 예정 체크</button>
+  </div>
+
+  <div id="doc-view">
   <div class="filters">
     <select id="f-cat" onchange="refreshDetailOptions(); renderAll()"><option value="">전체 상품 카테고리</option></select>
     <select id="f-detail" onchange="renderAll()"><option value="">전체 세부 카테고리</option></select>
@@ -368,6 +418,9 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
         <span class="table-hint">행 클릭 → 추이 · <b>Ctrl+클릭</b> 여러 SKU 묶기 · <b>Shift+클릭</b> 범위선택</span>
         <span id="active-filter-badge"></span>
       </span>
+      <span class="namew-control">SKU명 폭
+        <input type="range" class="namew-slider" min="120" max="480" step="10" value="220" oninput="setNameWidth(this.value)">
+      </span>
       <span class="table-count" id="table-count"></span>
     </div>
     <div class="table-scroll">
@@ -392,6 +445,99 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
         </thead>
         <tbody id="main-tbody"></tbody>
       </table>
+    </div>
+  </div>
+  </div>
+  <!-- ── 입고 예정 체크 (PO 대응 현황) ── -->
+  <div id="po-view">
+    <div id="po-upload-screen" class="po-upload-screen">
+      <div class="upload-zone po-upload-zone" id="po-drop-zone" onclick="document.getElementById('po-file-input').click()">
+        <div class="upload-icon">📦</div>
+        <div class="upload-main">쿠팡 발주(PO) 리스트 파일을 업로드하세요</div>
+        <div class="upload-sub">발주번호 · SKU ID · 입고예정일 · 발주수량 · 확정수량 포함 파일 — 1차 DOC 데이터와 SKU ID로 자동 매칭됩니다</div>
+        <div class="upload-formats">
+          <span class="fmt-tag">.xlsx</span><span class="fmt-tag">.xls</span><span class="fmt-tag">.csv</span>
+        </div>
+        <button class="btn-upload" onclick="event.stopPropagation();document.getElementById('po-file-input').click()">파일 선택</button>
+      </div>
+      <input type="file" id="po-file-input" accept=".xlsx,.xls,.csv" style="display:none">
+    </div>
+
+    <div id="po-content" style="display:none;flex-direction:column;flex:1;min-height:0">
+      <div class="dash-meta" id="po-meta" style="margin-bottom:10px"></div>
+
+      <div class="kpi-row" style="grid-template-columns:repeat(5,1fr)">
+        <div class="kpi"><div class="kpi-label">발주 등록 SKU</div><div class="kpi-val accent" id="po-kpi-total">—</div><div class="kpi-sub">2차 데이터(PO) 기준</div></div>
+        <div class="kpi" id="po-kpi-card-unconfirmed" onclick="togglePoKpiFilter('unconfirmed')"><div class="kpi-label">확정 대기 SKU</div><div class="kpi-val red" id="po-kpi-unconfirmed">—</div><div class="kpi-sub">발주는 있으나 미확정 · 클릭하여 필터</div></div>
+        <div class="kpi" id="po-kpi-card-needmore" onclick="togglePoKpiFilter('needmore')"><div class="kpi-label">추가발주 필요</div><div class="kpi-val orange" id="po-kpi-needmore">—</div><div class="kpi-sub">확정수량 반영해도 부족 · 클릭하여 필터</div></div>
+        <div class="kpi" id="po-kpi-card-delayed" onclick="togglePoKpiFilter('delayed')"><div class="kpi-label">입고 지연 SKU</div><div class="kpi-val teal" id="po-kpi-delayed">—</div><div class="kpi-sub">확정됐지만 예정일 경과·미입고 · 클릭하여 필터</div></div>
+        <div class="kpi" id="po-kpi-card-noorder" onclick="togglePoNoOrderList()"><div class="kpi-label">PO 미등록 위험 SKU</div><div class="kpi-val purple" id="po-kpi-noorder">—</div><div class="kpi-sub">위험·품절인데 발주 없음 · 클릭하여 목록</div></div>
+      </div>
+
+      <div class="po-noorder-box" id="po-noorder-box" style="display:none"></div>
+
+      <div class="filters">
+        <input type="text" id="po-search" class="po-search-input" placeholder="🔍 SKU ID 또는 상품명 검색" oninput="poSearch=this.value; renderPOAll()">
+        <button class="btn-report" onclick="openPOReport()">📋 발주 요청 보고서</button>
+        <button class="btn-report" onclick="openPODelayReport()">⏰ 입고 지연 확인 보고서</button>
+        <button class="btn-reset" onclick="resetPO()">↩ PO 파일 변경</button>
+      </div>
+
+      <div id="po-report-panel" style="display:none;margin-bottom:12px;flex-shrink:0;background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div class="report-head">
+          <span class="report-title">📋 발주 요청 보고서 <span class="report-sub">· 확정 요청 / 추가발주 / PO 미등록 위험 SKU 자동 정리 — 담당자 검토 후 발주·확정 요청</span></span>
+          <div class="report-btns">
+            <button class="btn-copy-report" onclick="copyPOReport(this)">📋 보고서 복사</button>
+            <button class="btn-ai-close" onclick="document.getElementById('po-report-panel').style.display='none'">✕ 닫기</button>
+          </div>
+        </div>
+        <pre class="report-box" id="po-report-box"></pre>
+      </div>
+
+      <div id="po-delay-report-panel" style="display:none;margin-bottom:12px;flex-shrink:0;background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div class="report-head">
+          <span class="report-title">⏰ 입고 지연 확인 보고서 <span class="report-sub">· 확정됐지만 입고예정일이 지나도록 들어오지 않은 물량 — 물류센터·거래처 확인 필요</span></span>
+          <div class="report-btns">
+            <button class="btn-copy-report" onclick="copyPODelayReport(this)">📋 보고서 복사</button>
+            <button class="btn-ai-close" onclick="document.getElementById('po-delay-report-panel').style.display='none'">✕ 닫기</button>
+          </div>
+        </div>
+        <pre class="report-box" id="po-delay-report-box"></pre>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">SKU별 발주 대응 현황
+            <span class="table-hint">행 클릭 → PO 상세 내역 · 입고 후 대응은 <b>확정수량</b> 기준으로 계산</span>
+          </span>
+          <span class="namew-control">SKU명 폭
+            <input type="range" class="namew-slider" min="120" max="480" step="10" value="220" oninput="setNameWidth(this.value)">
+          </span>
+          <span class="table-count" id="po-table-count"></span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>SKU ID</th>
+                <th>SKU명</th>
+                <th>브랜드</th>
+                <th>현재재고</th>
+                <th>일평균출고</th>
+                <th>현재 DOC</th>
+                <th>입고예정일</th>
+                <th>발주수량</th>
+                <th>확정수량</th>
+                <th>미확정수량</th>
+                <th title="확정수량 중 이미 창고에 입고 완료된 수량 — 현재재고에 이미 반영되어 있습니다">입고완료</th>
+                <th title="확정수량 중 아직 입고되지 않은 잔량 기준 시뮬레이션 결과 (입고완료분은 현재재고에 이미 반영되어 있어 제외하고 계산)">입고 후 대응</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody id="po-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -454,6 +600,55 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
   </div>
 </div>
 
+<!-- PO(발주) 상세 내역 모달 -->
+<div id="po-detail-modal" onclick="if(event.target===this)closePODetail()">
+  <div class="trend-box" style="max-width:860px">
+    <div class="trend-head">
+      <div>
+        <div class="trend-title" id="po-detail-title">📦 SKU 발주 상세</div>
+        <div class="trend-sub" id="po-detail-sub"></div>
+      </div>
+      <button class="btn-modal-close" onclick="closePODetail()">✕ 닫기</button>
+    </div>
+    <div class="trend-body">
+      <div class="table-scroll" style="max-height:56vh">
+        <table>
+          <thead>
+            <tr>
+              <th>발주번호</th><th>물류센터</th><th>발주현황</th><th>입고예정일</th>
+              <th>발주수량</th><th>확정수량</th><th>미확정</th><th>입고수량</th>
+            </tr>
+          </thead>
+          <tbody id="po-detail-tbody"></tbody>
+        </table>
+      </div>
+      <div class="trend-note">※ 확정수량이 0인 행은 아직 거래처 확정이 되지 않아 예정대로 입고되지 않을 수 있습니다. 발주 확정 전 담당자 확인이 필요합니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 제외 SKU 관리 모달 (단종 등) -->
+<div id="exclude-modal" onclick="if(event.target===this)closeExcludeManager()">
+  <div class="trend-box" style="max-width:640px">
+    <div class="trend-head">
+      <div>
+        <div class="trend-title">🚫 제외 SKU 관리</div>
+        <div class="trend-sub">단종 등으로 발주 대상에서 제외 — DOC 현황·입고 예정 체크·모든 보고서에서 함께 제외됩니다</div>
+      </div>
+      <button class="btn-modal-close" onclick="closeExcludeManager()">✕ 닫기</button>
+    </div>
+    <div class="trend-body">
+      <div class="exclude-add-row">
+        <input type="text" id="exclude-input" class="po-search-input" placeholder="🔍 SKU ID 또는 상품명 검색 (검색결과 클릭 → 바로 제외 · ID 직접입력 후 Enter도 가능)" oninput="renderExcludeSearchResults()" onkeydown="if(event.key==='Enter')addExcludeFromInput()">
+        <button class="avgcheck-search" onclick="addExcludeFromInput()">+ 추가</button>
+      </div>
+      <div class="exclude-search-results" id="exclude-search-results"></div>
+      <div class="ai-section-title" style="margin-bottom:6px">현재 제외 중인 SKU</div>
+      <div class="spike-list" id="exclude-list" style="max-height:300px"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 let skuData = [], rawRows = [], sortKey = 'reorder_rank', sortAsc = true;
 let seriesById = {}, allDates = [], inboundAvailable = false;
@@ -464,6 +659,50 @@ let kpiFilter = null;   // null | 'risk' | 'spike' — KPI 카드 클릭으로 �
 let activeTab = 'all';  // 'all' | 'avgcheck' — 뷰 탭
 let avgCheckOp = 'lte', avgCheckVal = null;  // 일평균 출고량 체크 탭 조건
 let lastInsights = { urgent: [], caution: [], spikes: [] };  // 분석 패널 복사용 최신 데이터
+
+let mainView = 'doc';   // 'doc' | 'po' — 최상단 뷰
+let poRows = [];        // PO CSV 원본 라인 (SKU×PO×창고 단위)
+let poBySku = {};       // SKU ID로 집계된 PO 그룹
+let poAnalysis = [];    // 1차(skuData) + 2차(PO) 매칭·시뮬레이션 결과
+let poNoOrderRisk = []; // 위험·품절인데 PO 리스트에 없는 SKU (1차 데이터 기준)
+let poFilter = 'all';   // 'all' | 'unconfirmed' | 'needmore'
+let poSearch = '';
+let poFileName = '';    // 업로드한 PO 파일명 (보고서 출처 표기용)
+let poStaleExcludedCount = 0;  // 예정일 경과 + 끝내 미확정으로 자동 제외된 발주 건수
+const PO_MIN_DOC = 14;  // 확정수량 반영 후 이 DOC 미만이면 추가발주 필요로 판단
+
+// ── 제외 SKU (단종 등) ── 파일 업로드와 무관하게 브라우저에 영구 저장, 모든 테이블·보고서에서 공통 제외
+let excludedSkus = new Set();
+const EXCLUDE_STORE_KEY = 'coupang_doc_excluded_skus';
+function loadExcludedSkus() {
+  try {
+    const raw = localStorage.getItem(EXCLUDE_STORE_KEY);
+    if (raw) excludedSkus = new Set(JSON.parse(raw));
+  } catch (e) { excludedSkus = new Set(); }
+}
+function saveExcludedSkus() {
+  try { localStorage.setItem(EXCLUDE_STORE_KEY, JSON.stringify([...excludedSkus])); } catch (e) {}
+}
+loadExcludedSkus();
+
+// ── SKU명 컬럼 폭 조절 (DOC 현황 · 입고 예정 체크 공통, 브라우저에 저장) ──
+const NAME_WIDTH_KEY = 'coupang_doc_name_width';
+function loadNameWidth() {
+  let px = 220;
+  try {
+    const raw = localStorage.getItem(NAME_WIDTH_KEY);
+    if (raw) px = parseInt(raw, 10) || 220;
+  } catch (e) {}
+  document.documentElement.style.setProperty('--name-w', px + 'px');
+  return px;
+}
+function setNameWidth(px) {
+  document.documentElement.style.setProperty('--name-w', px + 'px');
+  document.querySelectorAll('.namew-slider').forEach(s => { s.value = px; });
+  try { localStorage.setItem(NAME_WIDTH_KEY, px); } catch (e) {}
+}
+const _savedNameWidth = loadNameWidth();
+document.querySelectorAll('.namew-slider').forEach(s => { s.value = _savedNameWidth; });
 
 // ── 파일 입력 ──
 document.getElementById('file-input').addEventListener('change', e => {
@@ -477,12 +716,28 @@ dz.addEventListener('drop', e => {
   if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
 });
 
+// ── PO(2차 데이터) 파일 입력 ──
+document.getElementById('po-file-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadPOFile(e.target.files[0]);
+});
+const poDz = document.getElementById('po-drop-zone');
+poDz.addEventListener('dragover', e => { e.preventDefault(); poDz.classList.add('drag'); });
+poDz.addEventListener('dragleave', () => poDz.classList.remove('drag'));
+poDz.addEventListener('drop', e => {
+  e.preventDefault(); poDz.classList.remove('drag');
+  if (e.dataTransfer.files[0]) loadPOFile(e.dataTransfer.files[0]);
+});
+document.getElementById('po-tbody').addEventListener('click', e => {
+  const tr = e.target.closest('tr.po-row');
+  if (tr) openPODetail(tr.dataset.sku);
+});
+
 // 행 클릭 → 추이 드릴다운 / Ctrl·Shift 클릭 → 다중 선택 (이벤트 위임)
 document.getElementById('main-tbody').addEventListener('click', e => {
   const tr = e.target.closest('tr.sku-row');
   if (tr) onRowClick(e, tr.dataset.sku);
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTrend(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeTrend(); closePODetail(); closeExcludeManager(); } });
 
 function loadFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
@@ -683,6 +938,9 @@ function processData(rows, fname) {
   document.getElementById('dashboard').style.display = 'flex';
   updateTrendButton();
   renderAll();
+
+  // 1차 데이터가 (재)로드되면, 이미 업로드된 PO(2차) 데이터가 있을 경우 재매칭
+  if (poRows.length) { buildPOAnalysis(); if (mainView === 'po') renderPOAll(); }
 }
 
 // ── 필터 ──
@@ -707,6 +965,7 @@ function getFiltered() {
   const ord    = document.getElementById('f-order').value;
   const spike  = document.getElementById('f-spike').value;
   return skuData.filter(d =>
+    !excludedSkus.has(d.sku_id) &&
     (!cat    || d.product_category === cat) &&
     (!detail || d.detail_category === detail) &&
     (!st     || d.doc_status === st) &&
@@ -817,7 +1076,7 @@ function renderAll() {
     const selCls = selectedIds.has(d.sku_id) ? ' row-selected' : '';
     return `<tr class="sku-row${selCls}" data-sku="${String(d.sku_id).replace(/"/g,'&quot;')}">
       <td class="td-mono">${d.sku_id}</td>
-      <td class="td-name" title="${d.sku_name}">${d.sku_name}${spikeBadge}</td>
+      <td class="td-name" title="${d.sku_name}"><span class="td-name-text">${d.sku_name}</span>${spikeBadge}<button class="excl-btn" onclick="event.stopPropagation();excludeSku('${String(d.sku_id).replace(/'/g,"\\'")}')" title="단종 등으로 제외">🚫</button></td>
       <td>${d.product_category}</td>
       <td>${d.sub_category}</td>
       <td>${d.detail_category}</td>
@@ -869,6 +1128,7 @@ function buildReport() {
   r += `\n\n📈 출고 급상승 (전주 출고량이 전전주 대비 50%↑) — ${spikes.length}건\n`;
   r += spikes.length ? spikes.map(line).join('\n') : '  · 해당 없음';
   r += `\n\n※ 본 보고서는 업로드한 서플라이허브 데이터로 자동 산출되었습니다. 발주 확정 전 담당자 검토가 필요합니다.`;
+  if (excludedSkus.size) r += `\n※ 제외 처리된 SKU ${excludedSkus.size}건은 본 보고서에서 제외되었습니다.`;
   return r;
 }
 function openReport() {
@@ -1029,7 +1289,562 @@ function resetDashboard() {
   document.getElementById('report-panel').style.display = 'none';
   document.getElementById('upload-screen').style.display = 'flex';
   document.getElementById('dashboard').style.display = 'none';
+  resetPO();
+  setMainView('doc');
 }
+
+// ── 최상단 뷰 전환 (DOC 현황 ↔ 입고 예정 체크) ──
+function setMainView(v) {
+  mainView = v;
+  document.getElementById('doc-view').style.display = v === 'doc' ? 'flex' : 'none';
+  document.getElementById('po-view').style.display   = v === 'po'  ? 'flex' : 'none';
+  document.querySelectorAll('#main-tabs .main-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  if (v === 'po' && poRows.length) { buildPOAnalysis(); renderPOAll(); }
+}
+
+// ───────────────────── 입고 예정 체크 (PO 대응 현황) ─────────────────────
+// 2차 데이터(발주 리스트)를 1차 데이터(skuData)와 SKU ID로 매칭해
+// (1) 발주는 있으나 확정이 안 된 물량, (2) 확정수량 기준으로도 추가발주가 필요한 SKU를 찾아낸다.
+
+function numClean(v) { return Number(String(v ?? '').replace(/,/g, '')) || 0; }
+
+function normPODate(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return null;
+  if (/^\d{8}$/.test(s)) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
+  return s.slice(0, 10);
+}
+
+function loadPOFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    Papa.parse(file, {
+      header: true, skipEmptyLines: true, encoding: 'UTF-8',
+      complete: r => processPOData(r.data, file.name),
+      error: err => alert('CSV 읽기 실패: ' + err.message)
+    });
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        processPOData(XLSX.utils.sheet_to_json(ws), file.name);
+      } catch(err) { alert('파일 읽기 실패: ' + err.message); }
+    };
+    reader.readAsBinaryString(file);
+  }
+}
+
+function processPOData(rows, fname) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+
+  const map = {};
+  const list = [];
+  let staleCount = 0;
+  rows.forEach(row => {
+    const idRaw = row['SKU ID']; if (idRaw === undefined || idRaw === null || idRaw === '') return;
+    const sku_id = String(idRaw).trim();
+    const expected_date = normPODate(row['입고예정일']);
+    const order_qty     = numClean(row['발주수량']);
+    const confirmed_qty = numClean(row['확정수량']);
+    const received_qty  = numClean(row['입고수량']);
+
+    // 입고예정일이 이미 지났는데도 끝내 확정되지 않은 발주는 사실상 무산된 건으로 보고 집계에서 제외한다.
+    // (계속 "확정 대기"로 잡아두면 이미 죽은 발주가 계속 알람에 남아 혼선을 준다)
+    if (expected_date && expected_date < todayStr && confirmed_qty <= 0) {
+      staleCount++;
+      return;
+    }
+
+    const rec = {
+      po_no: row['발주번호'] ?? '', po_status: row['발주현황'] || '',
+      sku_id, sku_name: row['SKU 이름'] || '', warehouse: row['물류센터'] || '',
+      expected_date, order_qty, confirmed_qty, received_qty,
+      unconfirmed_qty: Math.max(order_qty - confirmed_qty, 0),
+    };
+    list.push(rec);
+
+    if (!map[sku_id]) map[sku_id] = {
+      sku_id, sku_name: rec.sku_name, warehouses: new Set(), dates: new Set(), rows: [],
+      order_total: 0, confirmed_total: 0, received_total: 0, unconfirmed_total: 0,
+    };
+    const g = map[sku_id];
+    g.rows.push(rec);
+    if (rec.warehouse) g.warehouses.add(rec.warehouse);
+    if (rec.expected_date) g.dates.add(rec.expected_date);
+    g.order_total += order_qty; g.confirmed_total += confirmed_qty;
+    g.received_total += received_qty; g.unconfirmed_total += rec.unconfirmed_qty;
+  });
+
+  poRows = list;
+  poBySku = map;
+  poStaleExcludedCount = staleCount;
+  poFilter = 'all'; poSearch = '';
+  const si = document.getElementById('po-search'); if (si) si.value = '';
+  document.getElementById('po-kpi-card-unconfirmed').classList.remove('kpi-active');
+  document.getElementById('po-kpi-card-needmore').classList.remove('kpi-active');
+  document.getElementById('po-kpi-card-delayed').classList.remove('kpi-active');
+
+  poFileName = fname;
+  buildPOAnalysis();
+
+  document.getElementById('po-meta').textContent =
+    `${fname} · 발주 ${poRows.length.toLocaleString()}건 · ${Object.keys(poBySku).length}개 SKU`
+    + (staleCount ? ` · 예정일 경과·미확정 ${staleCount}건 자동 제외` : '');
+  document.getElementById('po-upload-screen').style.display = 'none';
+  document.getElementById('po-content').style.display = 'flex';
+  renderPOAll();
+}
+
+// 오늘부터 maxDays일 동안 하루 단위로 재고를 시뮬레이션.
+// 확정수량(batchMap)만 "확정된 입고"로 반영하고(미확정 물량은 불확실하므로 제외),
+// 재고가 0 이하로 떨어지는 첫 날짜와, 마지막 확정 입고 반영 직후의 DOC를 계산한다.
+// 시뮬레이션 구간: 오늘 ~ (마지막 확정 입고예정일 + PO_MIN_DOC일).
+// 확정 입고가 전혀 없으면 마지막 입고예정일을 "오늘"로 간주해 PO_MIN_DOC일만 확인한다.
+// 구간을 이렇게 제한하는 이유: 무한정 긴 기간으로 시뮬레이션하면 확정 입고가 아무리 넉넉해도
+// 언젠가는(수개월 뒤라도) 재고가 바닥나기 마련이라 "추가발주 필요" 신호가 항상 참이 되어 버린다.
+// 실제로 봐야 할 것은 "이번에 확정된 입고분으로 최소 PO_MIN_DOC일치는 버틸 수 있는가"이다.
+function simulateStock(startStock, avg, batchMap, todayStr) {
+  const dates = Object.keys(batchMap).sort();
+  const today = new Date(todayStr + 'T00:00:00');
+  const lastBatchDate = dates.length ? new Date(dates[dates.length - 1] + 'T00:00:00') : today;
+  const horizonEnd = new Date(lastBatchDate); horizonEnd.setDate(horizonEnd.getDate() + PO_MIN_DOC);
+  const totalDays = Math.max(Math.round((horizonEnd - today) / 86400000), 0);
+
+  let stock = startStock;
+  let stockoutDate = null;
+  let stockAfterLastBatch = startStock;
+  let cursor = new Date(today);
+  for (let i = 0; i <= totalDays; i++) {
+    const dstr = cursor.toISOString().slice(0, 10);
+    if (batchMap[dstr]) { stock += batchMap[dstr]; stockAfterLastBatch = stock; }
+    if (stockoutDate === null && stock <= 0) stockoutDate = dstr;
+    // 실제 재고는 0 밑으로 내려갈 수 없다(품절 상태로 대기) — 마이너스로 계속 내려가게 두면
+    // 품절 후 입고까지 공백이 길수록 "입고 후 DOC"가 실제보다 훨씬 나쁘게(터무니없이 마이너스로) 왜곡된다.
+    stock = Math.max(stock - avg, 0);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  const docAfterArrival = avg > 0 ? Math.round(stockAfterLastBatch / avg) : null;
+  return { stockoutDate, docAfterArrival };
+}
+
+function buildPOAnalysis() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+  const skuMap = {}; skuData.forEach(d => { skuMap[d.sku_id] = d; });
+
+  poAnalysis = Object.values(poBySku).map(g => {
+    const sku = skuMap[g.sku_id] || null;
+    const avg = sku ? sku.avg_daily_outbound : 0;
+    const currentStock = sku ? sku.current_stock_qty : null;
+
+    // 확정수량 중 이미 입고 완료된 물량은 현재고(1차 데이터)에 이미 반영돼 있으므로,
+    // 시뮬레이션에는 "확정됐지만 아직 입고 안 된" 잔량만 미래 입고로 넣어야 이중 계산을 피할 수 있다.
+    const batchMap = {};
+    let pendingConfirmedTotal = 0;
+    g.rows.forEach(r => {
+      if (!r.expected_date) return;
+      const pending = Math.max(r.confirmed_qty - r.received_qty, 0);
+      if (pending <= 0) return;
+      batchMap[r.expected_date] = (batchMap[r.expected_date] || 0) + pending;
+      pendingConfirmedTotal += pending;
+    });
+
+    let sim = null, needMoreOrder = false;
+    if (sku && avg > 0) {
+      sim = simulateStock(currentStock, avg, batchMap, todayStr);
+      needMoreOrder = sim.stockoutDate !== null || (sim.docAfterArrival !== null && sim.docAfterArrival <= PO_MIN_DOC);
+    }
+
+    // 확정은 됐는데 입고예정일이 이미 지났고 아직 입고 안 된 물량 — 물류 지연 확인용
+    let overduePendingTotal = 0, overdueEarliestDate = null;
+    g.rows.forEach(r => {
+      if (!r.expected_date || r.expected_date >= todayStr) return;
+      const pendingHere = Math.max(r.confirmed_qty - r.received_qty, 0);
+      if (pendingHere <= 0) return;
+      overduePendingTotal += pendingHere;
+      if (!overdueEarliestDate || r.expected_date < overdueEarliestDate) overdueEarliestDate = r.expected_date;
+    });
+    const overdueDays = overdueEarliestDate
+      ? Math.round((today - new Date(overdueEarliestDate + 'T00:00:00')) / 86400000) : 0;
+
+    const datesSorted = [...g.dates].sort();
+    const hasUnconfirmed = g.unconfirmed_total > 0;
+
+    let po_status;
+    if (!sku)                            po_status = 'nodata';
+    else if (hasUnconfirmed && needMoreOrder) po_status = 'both';
+    else if (hasUnconfirmed)             po_status = 'unconfirmed';
+    else if (needMoreOrder)              po_status = 'needmore';
+    else                                 po_status = 'ok';
+
+    return {
+      sku_id: g.sku_id,
+      sku_name: (sku && sku.sku_name) || g.sku_name,
+      brand: sku ? sku.brand : '',
+      product_category: sku ? sku.product_category : '',
+      detail_category: sku ? sku.detail_category : '',
+      has_main_data: !!sku,
+      current_stock: currentStock, avg_daily_outbound: avg,
+      current_doc: sku ? sku.doc_days : null,
+      earliest_date: datesSorted[0] || null, latest_date: datesSorted[datesSorted.length - 1] || null,
+      order_total: g.order_total, confirmed_total: g.confirmed_total,
+      unconfirmed_total: g.unconfirmed_total, received_total: g.received_total,
+      pending_confirmed_total: pendingConfirmedTotal,
+      overdue_pending_total: overduePendingTotal,
+      overdue_earliest_date: overdueEarliestDate,
+      overdue_days: overdueDays,
+      stockout_date_sim: sim ? sim.stockoutDate : null,
+      doc_after_arrival: sim ? sim.docAfterArrival : null,
+      need_more_order: needMoreOrder,
+      po_status,
+      rows: g.rows,
+    };
+  });
+
+  // PO 리스트에 아예 없는 위험·품절 SKU (1차 데이터 기준 알람)
+  poNoOrderRisk = skuData.filter(d => (d.doc_status === '위험' || d.doc_status === '품절') && !poBySku[d.sku_id] && !excludedSkus.has(d.sku_id));
+}
+
+const PO_STATUS_RANK = { both: 0, unconfirmed: 1, needmore: 1, nodata: 2, ok: 3 };
+function getPOFiltered() {
+  const q = poSearch.trim().toLowerCase();
+  return poAnalysis
+    .filter(d => {
+      if (excludedSkus.has(d.sku_id)) return false;
+      if (poFilter === 'unconfirmed' && d.unconfirmed_total <= 0) return false;
+      if (poFilter === 'needmore' && !d.need_more_order) return false;
+      if (poFilter === 'delayed' && d.overdue_pending_total <= 0) return false;
+      if (q && !(String(d.sku_id).toLowerCase().includes(q) || String(d.sku_name).toLowerCase().includes(q))) return false;
+      return true;
+    })
+    .sort((a, b) => PO_STATUS_RANK[a.po_status] - PO_STATUS_RANK[b.po_status] || b.unconfirmed_total - a.unconfirmed_total);
+}
+
+function togglePoKpiFilter(type) {
+  poFilter = (poFilter === type) ? 'all' : type;
+  document.getElementById('po-kpi-card-unconfirmed').classList.toggle('kpi-active', poFilter === 'unconfirmed');
+  document.getElementById('po-kpi-card-needmore').classList.toggle('kpi-active', poFilter === 'needmore');
+  document.getElementById('po-kpi-card-delayed').classList.toggle('kpi-active', poFilter === 'delayed');
+  renderPOAll();
+}
+
+function togglePoNoOrderList() {
+  const box = document.getElementById('po-noorder-box');
+  const show = box.style.display === 'none' || !box.style.display;
+  box.style.display = show ? 'flex' : 'none';
+  document.getElementById('po-kpi-card-noorder').classList.toggle('kpi-active', show);
+  if (show) renderPONoOrderList();
+}
+
+function renderPONoOrderList() {
+  const box = document.getElementById('po-noorder-box');
+  box.innerHTML = poNoOrderRisk.length
+    ? poNoOrderRisk.map(d => `
+        <div class="spike-item">
+          <div class="spike-item-top">
+            <span class="spike-sku">[${escapeHtml(d.sku_id)}]</span>
+            <span class="spike-name" title="${escapeHtml(d.sku_name)}">${escapeHtml(d.sku_name)}</span>
+            <span class="badge badge-${d.doc_status}">${d.doc_status}</span>
+          </div>
+          <div class="spike-item-sub">현재고 ${d.current_stock_qty.toLocaleString()} · 일평균 ${d.avg_daily_outbound} · DOC ${d.doc_days ?? '품절'}일 · 품절예상 ${d.stockout_expected_date ?? '-'} — <b style="color:var(--purple)">발주 리스트에 없음, 발주 등록 필요</b></div>
+        </div>`).join('')
+    : `<div class="spike-empty">해당 없음 — 위험·품절 SKU가 모두 발주 리스트에 등록되어 있습니다.</div>`;
+}
+
+function renderPOAll() {
+  if (!poAnalysis.length) return;
+  const filtered = getPOFiltered();
+  const included = poAnalysis.filter(d => !excludedSkus.has(d.sku_id));
+
+  document.getElementById('po-kpi-total').textContent       = included.length;
+  document.getElementById('po-kpi-unconfirmed').textContent = included.filter(d => d.unconfirmed_total > 0).length;
+  document.getElementById('po-kpi-needmore').textContent    = included.filter(d => d.need_more_order).length;
+  document.getElementById('po-kpi-delayed').textContent     = included.filter(d => d.overdue_pending_total > 0).length;
+  document.getElementById('po-kpi-noorder').textContent     = poNoOrderRisk.length;
+  document.getElementById('po-table-count').textContent     = `${filtered.length}개 SKU`;
+
+  const badgeHtml = {
+    both:        '<span class="po-badge po-badge-both">🔴 확정필요+추가발주</span>',
+    unconfirmed: '<span class="po-badge po-badge-unconfirmed">🟠 확정 필요</span>',
+    needmore:    '<span class="po-badge po-badge-needmore">🟣 추가발주 필요</span>',
+    nodata:      '<span class="po-badge po-badge-nodata">⚪ 1차 데이터 없음</span>',
+    ok:          '<span class="po-badge po-badge-ok">🟢 대응 양호</span>',
+  };
+
+  document.getElementById('po-tbody').innerHTML = filtered.map(d => {
+    const periodTxt = !d.earliest_date ? '—'
+      : d.earliest_date === d.latest_date ? d.earliest_date
+      : `${d.earliest_date} ~ ${d.latest_date}`;
+    const respTxt = !d.has_main_data ? '—'
+      : d.stockout_date_sim ? `<span style="color:var(--red);font-weight:700">${d.stockout_date_sim} 품절위험</span>`
+      : d.avg_daily_outbound === 0 ? '출고없음'
+      : (d.doc_after_arrival != null ? `${d.doc_after_arrival}일` : '—');
+
+    return `<tr class="po-row" data-sku="${String(d.sku_id).replace(/"/g,'&quot;')}">
+      <td class="td-mono">${escapeHtml(d.sku_id)}</td>
+      <td class="td-name" title="${escapeHtml(d.sku_name)}"><span class="td-name-text">${escapeHtml(d.sku_name)}</span><button class="excl-btn" onclick="event.stopPropagation();excludeSku('${String(d.sku_id).replace(/'/g,"\\'")}')" title="단종 등으로 제외">🚫</button></td>
+      <td>${escapeHtml(d.brand)}</td>
+      <td class="td-mono" style="text-align:right">${d.has_main_data ? d.current_stock.toLocaleString() : '—'}</td>
+      <td class="td-mono" style="text-align:right">${d.has_main_data ? d.avg_daily_outbound : '—'}</td>
+      <td class="td-mono" style="text-align:right">${d.has_main_data ? (d.current_doc ?? '품절') : '—'}</td>
+      <td class="td-mono">${periodTxt}</td>
+      <td class="td-mono" style="text-align:right">${d.order_total.toLocaleString()}</td>
+      <td class="td-mono" style="text-align:right">${d.confirmed_total.toLocaleString()}</td>
+      <td class="td-mono" style="text-align:right${d.unconfirmed_total > 0 ? ';color:var(--red);font-weight:700' : ''}">${d.unconfirmed_total.toLocaleString()}</td>
+      <td class="td-mono" style="text-align:right;color:var(--green)">${d.received_total.toLocaleString()}</td>
+      <td>${respTxt}</td>
+      <td>${badgeHtml[d.po_status]}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="13" class="empty">데이터 없음</td></tr>`;
+
+  const porp = document.getElementById('po-report-panel');
+  if (porp.style.display === 'block') document.getElementById('po-report-box').textContent = buildPOReport();
+  const podrp = document.getElementById('po-delay-report-panel');
+  if (podrp.style.display === 'block') document.getElementById('po-delay-report-box').textContent = buildPODelayReport();
+}
+
+function openPODetail(skuId) {
+  const d = poAnalysis.find(x => x.sku_id === skuId);
+  if (!d) return;
+  document.getElementById('po-detail-title').textContent = `📦 [${d.sku_id}] ${d.sku_name}`;
+  document.getElementById('po-detail-sub').textContent =
+    `발주 ${d.rows.length}건 · 발주수량 ${d.order_total.toLocaleString()} · 확정 ${d.confirmed_total.toLocaleString()} · 미확정 ${d.unconfirmed_total.toLocaleString()}`;
+  const rowsSorted = [...d.rows].sort((a, b) => String(a.expected_date||'').localeCompare(String(b.expected_date||'')));
+  document.getElementById('po-detail-tbody').innerHTML = rowsSorted.map(r => `
+    <tr>
+      <td class="td-mono">${escapeHtml(r.po_no)}</td>
+      <td>${escapeHtml(r.warehouse)}</td>
+      <td>${escapeHtml(r.po_status)}</td>
+      <td class="td-mono">${escapeHtml(r.expected_date || '—')}</td>
+      <td class="td-mono" style="text-align:right">${r.order_qty.toLocaleString()}</td>
+      <td class="td-mono" style="text-align:right">${r.confirmed_qty.toLocaleString()}</td>
+      <td class="td-mono" style="text-align:right${r.unconfirmed_qty > 0 ? ';color:var(--red);font-weight:700' : ''}">${r.unconfirmed_qty.toLocaleString()}</td>
+      <td class="td-mono" style="text-align:right">${r.received_qty.toLocaleString()}</td>
+    </tr>`).join('');
+  document.getElementById('po-detail-modal').classList.add('open');
+}
+function closePODetail() {
+  document.getElementById('po-detail-modal').classList.remove('open');
+}
+
+function resetPO() {
+  poRows = []; poBySku = {}; poAnalysis = []; poNoOrderRisk = [];
+  poFilter = 'all'; poSearch = ''; poFileName = ''; poStaleExcludedCount = 0;
+  document.getElementById('po-file-input').value = '';
+  const si = document.getElementById('po-search'); if (si) si.value = '';
+  document.getElementById('po-noorder-box').style.display = 'none';
+  document.getElementById('po-kpi-card-unconfirmed').classList.remove('kpi-active');
+  document.getElementById('po-kpi-card-needmore').classList.remove('kpi-active');
+  document.getElementById('po-kpi-card-noorder').classList.remove('kpi-active');
+  document.getElementById('po-kpi-card-delayed').classList.remove('kpi-active');
+  document.getElementById('po-content').style.display = 'none';
+  document.getElementById('po-upload-screen').style.display = 'flex';
+  document.getElementById('po-report-panel').style.display = 'none';
+  document.getElementById('po-delay-report-panel').style.display = 'none';
+}
+
+// ── 발주 요청 보고서 (입고 예정 체크) ──
+function todayStr_() {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+}
+
+// 발주 요청 보고서: "미입고 확정수량 반영 후 DOC · 품절 예상일"을 맨 앞에 내세워
+// 한눈에 "발주를 더 넣어야겠다"가 보이도록 간결하게 구성한다.
+function buildPOReport() {
+  const filtered = getPOFiltered();
+  const unconfirmed = filtered.filter(d => d.unconfirmed_total > 0)
+                              .sort((a, b) => b.unconfirmed_total - a.unconfirmed_total);
+  const needMore = filtered.filter(d => d.need_more_order)
+                           .sort((a, b) => (a.doc_after_arrival ?? 999) - (b.doc_after_arrival ?? 999));
+  const noOrder = poNoOrderRisk;
+
+  const lineUnconf = d =>
+    `  · [${d.sku_id}] ${d.sku_name} — 미확정 ${d.unconfirmed_total.toLocaleString()}개 · 입고예정 ${d.earliest_date ?? '-'}`;
+  const lineNeedMore = d => {
+    const docTxt = d.doc_after_arrival !== null ? `DOC ${d.doc_after_arrival}일` : 'DOC 계산불가';
+    const stockoutTxt = d.stockout_date_sim ? `품절예상 ${d.stockout_date_sim}` : '';
+    return `  · [${d.sku_id}] ${d.sku_name} → ${docTxt}${stockoutTxt ? ' · ' + stockoutTxt : ''} ⇒ 발주 추가 검토 (미입고확정 ${d.pending_confirmed_total.toLocaleString()}개)`;
+  };
+  const lineNoOrder = d =>
+    `  · [${d.sku_id}] ${d.sku_name} — DOC ${d.doc_days ?? '품절'}일 · 품절예상 ${d.stockout_expected_date ?? '-'}`;
+
+  let r = '';
+  r += `[발주 요청 보고서] ${todayStr_()} · 확정요청 ${unconfirmed.length} · 추가발주 ${needMore.length} · 미등록위험 ${noOrder.length}\n`;
+  r += `\n🟠 확정 요청 필요 — ${unconfirmed.length}건\n`;
+  r += unconfirmed.length ? unconfirmed.map(lineUnconf).join('\n') : '  · 해당 없음';
+  r += `\n\n🟣 추가 발주 필요 — ${needMore.length}건\n`;
+  r += needMore.length ? needMore.map(lineNeedMore).join('\n') : '  · 해당 없음';
+  r += `\n\n⚪ 발주 미등록 위험 — ${noOrder.length}건\n`;
+  r += noOrder.length ? noOrder.map(lineNoOrder).join('\n') : '  · 해당 없음';
+  r += `\n\n※ SKU ID 기준 자동 매칭 산출 · 발주 전 담당자 검토 필요.`;
+  if (poStaleExcludedCount) r += ` 예정일 경과·미확정 ${poStaleExcludedCount}건 제외됨.`;
+  if (excludedSkus.size) r += ` 제외 처리 SKU ${excludedSkus.size}건 제외됨.`;
+  return r;
+}
+function openPOReport() {
+  document.getElementById('po-report-box').textContent = buildPOReport();
+  document.getElementById('po-report-panel').style.display = 'block';
+}
+function copyPOReport(btn) {
+  const text = document.getElementById('po-report-box').textContent;
+  const done = () => {
+    btn.textContent = '✅ 복사됨'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 보고서 복사'; btn.classList.remove('copied'); }, 2000);
+  };
+  navigator.clipboard.writeText(text).then(done).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove(); done();
+  });
+}
+
+// 입고 지연 확인 보고서: 확정은 됐는데 입고예정일이 지나도록 안 들어온 물량만 모아서
+// 물류센터/거래처에 확인이 필요한 건을 간결하게 보여준다.
+function buildPODelayReport() {
+  const delayed = getPOFiltered().filter(d => d.overdue_pending_total > 0)
+                                 .sort((a, b) => b.overdue_days - a.overdue_days);
+
+  const line = d =>
+    `  · [${d.sku_id}] ${d.sku_name} — 미입고 ${d.overdue_pending_total.toLocaleString()}개 · 예정일 ${d.overdue_earliest_date} (${d.overdue_days}일 경과)`;
+
+  let r = '';
+  r += `[입고 지연 확인 보고서] ${todayStr_()} · 지연 ${delayed.length}건\n`;
+  r += `\n⏰ 확정됐지만 예정일 경과·미입고 — ${delayed.length}건\n`;
+  r += delayed.length ? delayed.map(line).join('\n') : '  · 해당 없음';
+  r += `\n\n※ 확정수량 중 아직 입고되지 않은 잔량 기준 · 물류센터·거래처에 입고 지연 사유 확인이 필요합니다.`;
+  if (poStaleExcludedCount) r += ` 예정일 경과·미확정 ${poStaleExcludedCount}건 제외됨.`;
+  if (excludedSkus.size) r += ` 제외 처리 SKU ${excludedSkus.size}건 제외됨.`;
+  return r;
+}
+function openPODelayReport() {
+  document.getElementById('po-delay-report-box').textContent = buildPODelayReport();
+  document.getElementById('po-delay-report-panel').style.display = 'block';
+}
+function copyPODelayReport(btn) {
+  const text = document.getElementById('po-delay-report-box').textContent;
+  const done = () => {
+    btn.textContent = '✅ 복사됨'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 보고서 복사'; btn.classList.remove('copied'); }, 2000);
+  };
+  navigator.clipboard.writeText(text).then(done).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove(); done();
+  });
+}
+
+// ── 제외 SKU 관리 (단종 등) ──
+function updateExcludeButtonLabel() {
+  const b = document.getElementById('btn-exclude');
+  if (b) b.textContent = excludedSkus.size ? `🚫 제외 SKU 관리 (${excludedSkus.size})` : '🚫 제외 SKU 관리';
+}
+function findSkuNameAnywhere(id) {
+  const a = skuData.find(d => d.sku_id === id);
+  if (a) return a.sku_name;
+  const b = poAnalysis.find(d => d.sku_id === id);
+  return b ? b.sku_name : '';
+}
+function refreshAfterExcludeChange() {
+  saveExcludedSkus();
+  updateExcludeButtonLabel();
+  if (skuData.length) renderAll();
+  if (poRows.length) { buildPOAnalysis(); renderPOAll(); }
+  if (document.getElementById('exclude-modal').classList.contains('open')) {
+    renderExcludeList();
+    renderExcludeSearchResults();
+  }
+}
+function excludeSku(id) {
+  excludedSkus.add(String(id));
+  refreshAfterExcludeChange();
+}
+function removeExclude(id) {
+  excludedSkus.delete(String(id));
+  refreshAfterExcludeChange();
+}
+function addExcludeFromInput() {
+  const inp = document.getElementById('exclude-input');
+  const raw = inp.value;
+  if (!raw.trim()) return;
+  raw.split(/[,\n]+/).map(s => s.trim()).filter(Boolean).forEach(id => excludedSkus.add(id));
+  inp.value = '';
+  clearExcludeSearchResults();
+  refreshAfterExcludeChange();
+}
+function clearExcludeSearchResults() {
+  const rb = document.getElementById('exclude-search-results');
+  rb.innerHTML = ''; rb.style.display = 'none';
+}
+// 입력한 SKU ID/상품명으로 현재 업로드된 데이터(1차 DOC 데이터 + 2차 PO 데이터)를 검색해
+// 후보 목록을 보여주고, 클릭 한 번으로 바로 제외 처리할 수 있게 한다.
+function renderExcludeSearchResults() {
+  const box = document.getElementById('exclude-search-results');
+  const q = document.getElementById('exclude-input').value.trim().toLowerCase();
+  if (!q) { box.innerHTML = ''; box.style.display = 'none'; return; }
+
+  const seen = new Set();
+  const results = [];
+  const tryAdd = (id, name) => {
+    if (results.length >= 30 || seen.has(id)) return;
+    if (String(id).toLowerCase().includes(q) || String(name).toLowerCase().includes(q)) {
+      results.push({ id, name }); seen.add(id);
+    }
+  };
+  skuData.forEach(d => tryAdd(d.sku_id, d.sku_name));
+  poAnalysis.forEach(d => tryAdd(d.sku_id, d.sku_name));
+
+  if (!results.length) {
+    box.innerHTML = `<div class="spike-empty">일치하는 SKU가 없습니다 (현재 업로드된 데이터 기준 검색). ID를 직접 입력 후 Enter로 추가할 수 있습니다.</div>`;
+    box.style.display = 'flex';
+    return;
+  }
+  box.innerHTML = results.map(r => {
+    const already = excludedSkus.has(r.id);
+    const idEsc = String(r.id).replace(/'/g, "\\'");
+    return `<div class="exclude-result-item${already ? ' already' : ''}" ${already ? '' : `onclick="quickExclude('${idEsc}')"`}>
+      <span class="spike-sku">[${escapeHtml(r.id)}]</span>
+      <span class="spike-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name) || '(상품명 없음)'}</span>
+      <span class="${already ? 'exclude-result-already' : 'exclude-result-add'}">${already ? '이미 제외됨' : '+ 제외 추가'}</span>
+    </div>`;
+  }).join('');
+  box.style.display = 'flex';
+}
+function quickExclude(id) {
+  excludedSkus.add(String(id));
+  document.getElementById('exclude-input').value = '';
+  clearExcludeSearchResults();
+  refreshAfterExcludeChange();
+}
+function renderExcludeList() {
+  const box = document.getElementById('exclude-list');
+  const ids = [...excludedSkus].sort();
+  box.innerHTML = ids.length
+    ? ids.map(id => {
+        const name = findSkuNameAnywhere(id);
+        return `<div class="spike-item">
+          <div class="spike-item-top">
+            <span class="spike-sku">[${escapeHtml(id)}]</span>
+            <span class="spike-name" title="${escapeHtml(name)}">${escapeHtml(name) || '(현재 업로드된 데이터에 없음)'}</span>
+            <button class="btn-copy" style="width:auto;padding:4px 10px;flex:none" onclick="removeExclude('${id.replace(/'/g,"\\'")}')">✕ 제외 해제</button>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div class="spike-empty">제외된 SKU가 없습니다. 위에 SKU ID를 입력하거나, 테이블의 상품명 옆 🚫 버튼으로 추가하세요.</div>`;
+}
+function openExcludeManager() {
+  document.getElementById('exclude-input').value = '';
+  clearExcludeSearchResults();
+  renderExcludeList();
+  document.getElementById('exclude-modal').classList.add('open');
+}
+function closeExcludeManager() {
+  document.getElementById('exclude-modal').classList.remove('open');
+}
+updateExcludeButtonLabel();
 
 // ───────────────────── 입출고 추이 (드릴다운 / 다중 비교) ─────────────────────
 const TREND_PALETTE = ['#4f6ef7','#22c55e','#f97316','#a855f7','#14b8a6','#ef4444',
