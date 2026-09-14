@@ -519,21 +519,21 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
           <table>
             <thead>
               <tr>
-                <th>SKU ID</th>
-                <th>SKU명</th>
-                <th>브랜드</th>
-                <th>현재재고</th>
-                <th>일평균출고</th>
-                <th>현재 DOC</th>
-                <th>입고예정일</th>
-                <th>발주수량</th>
-                <th>확정수량</th>
-                <th>미확정수량</th>
-                <th title="확정수량 중 이미 창고에 입고 완료된 수량 — 현재재고에 이미 반영되어 있습니다">입고완료</th>
-                <th title="확정수량 - 입고완료 = 앞으로 더 들어올 확정 물량">남은 입고수량</th>
-                <th title="(현재재고 + 남은 입고수량) ÷ 일평균출고 — 입고완료분은 이미 현재재고에 포함되어 있으므로 제외하고, 아직 안 들어온 확정수량만 더해서 계산">입고 후 대응</th>
-                <th title="(현재재고 + 남은 입고수량)이 DOC 14일치에 못 미치면, 14일을 채우는 데 필요한 추가 발주 수량 = 일평균출고×14 − (현재재고+남은 입고수량)">추가발주 필요수량</th>
-                <th>상태</th>
+                <th onclick="poSortBy('sku_id')">SKU ID ↕</th>
+                <th onclick="poSortBy('sku_name')">SKU명 ↕</th>
+                <th onclick="poSortBy('brand')">브랜드 ↕</th>
+                <th onclick="poSortBy('current_stock')">현재재고 ↕</th>
+                <th onclick="poSortBy('avg_daily_outbound')">일평균출고 ↕</th>
+                <th onclick="poSortBy('current_doc')">현재 DOC ↕</th>
+                <th onclick="poSortBy('earliest_date')">입고예정일 ↕</th>
+                <th onclick="poSortBy('order_total')">발주수량 ↕</th>
+                <th onclick="poSortBy('confirmed_total')">확정수량 ↕</th>
+                <th onclick="poSortBy('unconfirmed_total')">미확정수량 ↕</th>
+                <th onclick="poSortBy('received_total')" title="확정수량 중 이미 창고에 입고 완료된 수량 — 현재재고에 이미 반영되어 있습니다">입고완료 ↕</th>
+                <th onclick="poSortBy('pending_confirmed_total')" title="확정수량 - 입고완료 = 앞으로 더 들어올 확정 물량">남은 입고수량 ↕</th>
+                <th onclick="poSortBy('doc_after_arrival')" title="(현재재고 + 남은 입고수량) ÷ 일평균출고 — 입고완료분은 이미 현재재고에 포함되어 있으므로 제외하고, 아직 안 들어온 확정수량만 더해서 계산">입고 후 대응 ↕</th>
+                <th onclick="poSortBy('additional_order_qty')" title="(현재재고 + 남은 입고수량)이 DOC 14일치에 못 미치면, 14일을 채우는 데 필요한 추가 발주 수량 = 일평균출고×14 − (현재재고+남은 입고수량)">추가발주 필요수량 ↕</th>
+                <th onclick="poSortBy('po_status')">상태 ↕</th>
               </tr>
             </thead>
             <tbody id="po-tbody"></tbody>
@@ -669,6 +669,7 @@ let poAnalysis = [];    // 1차(skuData) + 2차(PO) 매칭·시뮬레이션 결�
 let poNoOrderRisk = []; // 위험·품절인데 PO 리스트에 없는 SKU (1차 데이터 기준)
 let poFilter = 'all';   // 'all' | 'unconfirmed' | 'needmore'
 let poSearch = '';
+let poSortKey = null, poSortAsc = true;  // null이면 기본(상태 심각도) 정렬 사용
 let poFileName = '';    // 업로드한 PO 파일명 (보고서 출처 표기용)
 let poStaleExcludedCount = 0;  // 예정일 경과 + 끝내 미확정으로 자동 제외된 발주 건수
 const PO_MIN_DOC = 14;  // 확정수량 반영 후 이 DOC 미만이면 추가발주 필요로 판단
@@ -1523,16 +1524,35 @@ function buildPOAnalysis() {
 const PO_STATUS_RANK = { both: 0, unconfirmed: 1, needmore: 1, nodata: 2, ok: 3 };
 function getPOFiltered() {
   const q = poSearch.trim().toLowerCase();
-  return poAnalysis
-    .filter(d => {
-      if (excludedSkus.has(d.sku_id)) return false;
-      if (poFilter === 'unconfirmed' && d.unconfirmed_total <= 0) return false;
-      if (poFilter === 'needmore' && !d.need_more_order) return false;
-      if (poFilter === 'delayed' && d.overdue_pending_total <= 0) return false;
-      if (q && !(String(d.sku_id).toLowerCase().includes(q) || String(d.sku_name).toLowerCase().includes(q))) return false;
-      return true;
-    })
-    .sort((a, b) => PO_STATUS_RANK[a.po_status] - PO_STATUS_RANK[b.po_status] || b.unconfirmed_total - a.unconfirmed_total);
+  const filtered = poAnalysis.filter(d => {
+    if (excludedSkus.has(d.sku_id)) return false;
+    if (poFilter === 'unconfirmed' && d.unconfirmed_total <= 0) return false;
+    if (poFilter === 'needmore' && !d.need_more_order) return false;
+    if (poFilter === 'delayed' && d.overdue_pending_total <= 0) return false;
+    if (q && !(String(d.sku_id).toLowerCase().includes(q) || String(d.sku_name).toLowerCase().includes(q))) return false;
+    return true;
+  });
+
+  if (poSortKey) {
+    filtered.sort((a, b) => {
+      const va = a[poSortKey] ?? (poSortAsc ? Infinity : -Infinity);
+      const vb = b[poSortKey] ?? (poSortAsc ? Infinity : -Infinity);
+      if (typeof va === 'number' && typeof vb === 'number') return poSortAsc ? va - vb : vb - va;
+      return poSortAsc
+        ? String(va).localeCompare(String(vb), 'ko')
+        : String(vb).localeCompare(String(va), 'ko');
+    });
+  } else {
+    filtered.sort((a, b) => PO_STATUS_RANK[a.po_status] - PO_STATUS_RANK[b.po_status] || b.unconfirmed_total - a.unconfirmed_total);
+  }
+  return filtered;
+}
+
+// PO 테이블 헤더 클릭 정렬 — 같은 컬럼을 다시 클릭하면 오름차순/내림차순 토글
+function poSortBy(key) {
+  poSortAsc = (poSortKey === key) ? !poSortAsc : true;
+  poSortKey = key;
+  renderPOAll();
 }
 
 function togglePoKpiFilter(type) {
@@ -1650,6 +1670,7 @@ function closePODetail() {
 function resetPO() {
   poRows = []; poBySku = {}; poAnalysis = []; poNoOrderRisk = [];
   poFilter = 'all'; poSearch = ''; poFileName = ''; poStaleExcludedCount = 0;
+  poSortKey = null; poSortAsc = true;
   document.getElementById('po-file-input').value = '';
   const si = document.getElementById('po-search'); if (si) si.value = '';
   document.getElementById('po-noorder-box').style.display = 'none';
