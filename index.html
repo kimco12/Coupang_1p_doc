@@ -49,6 +49,10 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .btn-report{padding:6px 14px;background:var(--bg3);border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
 .btn-exclude{padding:6px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
 .btn-exclude:hover{border-color:var(--text2);color:var(--text)}
+.safestock-control{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px}
+.safestock-label{font-size:12px;color:var(--text2);white-space:nowrap}
+.safestock-input{width:48px;padding:3px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;font-family:inherit;text-align:center;outline:none}
+.safestock-input:focus{border-color:var(--accent)}
 
 /* ── 발주 보고서 패널 ── */
 #report-panel{display:none;margin-bottom:12px;flex-shrink:0;background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -296,6 +300,11 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
       <button class="btn-excel" onclick="downloadExcel()">⬇ 엑셀 다운로드</button>
       <button class="btn-print" onclick="window.print()">🖨 인쇄</button>
       <button class="btn-exclude" id="btn-exclude" onclick="openExcludeManager()">🚫 제외 SKU 관리</button>
+      <span class="safestock-control" title="이 기준일 미만이면 위험·추가발주 필요로 판단합니다. 위험 기준은 이 값의 절반으로 자동 연동됩니다.">
+        <span class="safestock-label">⚙ 안전재고 기준일</span>
+        <input type="number" id="safestock-input" class="safestock-input" min="1" max="180" value="14" onchange="setSafeStockDays(this.value)">
+        <span class="safestock-label">일</span>
+      </span>
       <button class="btn-reset" onclick="resetDashboard()">↩ 파일 변경</button>
     </div>
   </div>
@@ -407,7 +416,7 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
   <div class="kpi-row">
     <div class="kpi"><div class="kpi-label">총 SKU 수</div><div class="kpi-val accent" id="kpi-total">—</div><div class="kpi-sub">관리 중인 SKU</div></div>
     <div class="kpi"><div class="kpi-label">일평균 출고량 합계</div><div class="kpi-val" id="kpi-sum">—</div><div class="kpi-sub">ea / day (전체 합산)</div></div>
-    <div class="kpi" id="kpi-card-risk" onclick="toggleKpiFilter('risk')"><div class="kpi-label">위험 SKU</div><div class="kpi-val red" id="kpi-risk">—</div><div class="kpi-sub">DOC 7일 이하 · 클릭하여 필터</div></div>
+    <div class="kpi" id="kpi-card-risk" onclick="toggleKpiFilter('risk')"><div class="kpi-label">위험 SKU</div><div class="kpi-val red" id="kpi-risk">—</div><div class="kpi-sub" id="kpi-sub-risk">DOC 7일 이하 · 클릭하여 필터</div></div>
     <div class="kpi" id="kpi-card-spike" onclick="toggleKpiFilter('spike')"><div class="kpi-label">급상승 SKU</div><div class="kpi-val teal" id="kpi-spike">—</div><div class="kpi-sub">출고량 50%↑ 상품 · 클릭하여 필터</div></div>
   </div>
 
@@ -532,7 +541,7 @@ tbody tr.row-selected:hover{background:rgba(79,110,247,.22)!important}
                 <th onclick="poSortBy('received_total')" title="확정수량 중 이미 창고에 입고 완료된 수량 — 현재재고에 이미 반영되어 있습니다">입고완료 ↕</th>
                 <th onclick="poSortBy('pending_confirmed_total')" title="확정수량 - 입고완료 = 앞으로 더 들어올 확정 물량">남은 입고수량 ↕</th>
                 <th onclick="poSortBy('doc_after_arrival')" title="(현재재고 + 남은 입고수량) ÷ 일평균출고 — 입고완료분은 이미 현재재고에 포함되어 있으므로 제외하고, 아직 안 들어온 확정수량만 더해서 계산">입고 후 대응 ↕</th>
-                <th onclick="poSortBy('additional_order_qty')" title="(현재재고 + 남은 입고수량)이 DOC 14일치에 못 미치면, 14일을 채우는 데 필요한 추가 발주 수량 = 일평균출고×14 − (현재재고+남은 입고수량)">추가발주 필요수량 ↕</th>
+                <th id="th-addorder" onclick="poSortBy('additional_order_qty')" title="(현재재고 + 남은 입고수량)이 안전재고 기준일치에 못 미치면, 그 기준치를 채우는 데 필요한 추가 발주 수량">추가발주 필요수량 ↕</th>
                 <th onclick="poSortBy('po_status')">상태 ↕</th>
               </tr>
             </thead>
@@ -672,7 +681,42 @@ let poSearch = '';
 let poSortKey = null, poSortAsc = true;  // null이면 기본(상태 심각도) 정렬 사용
 let poFileName = '';    // 업로드한 PO 파일명 (보고서 출처 표기용)
 let poStaleExcludedCount = 0;  // 예정일 경과 + 끝내 미확정으로 자동 제외된 발주 건수
-const PO_MIN_DOC = 14;  // 확정수량 반영 후 이 DOC 미만이면 추가발주 필요로 판단
+// ── 안전재고 기준일 ── 회사마다 다를 수 있어 설정 가능. DOC 현황의 위험/주의 판정과
+// 입고 예정 체크의 추가발주 필요 판정이 모두 이 값 하나를 따른다. 브라우저에 영구 저장.
+let SAFE_STOCK_DAYS = 14;
+const SAFE_STOCK_KEY = 'coupang_doc_safe_stock_days';
+function loadSafeStockDays() {
+  try {
+    const raw = localStorage.getItem(SAFE_STOCK_KEY);
+    const n = parseInt(raw, 10);
+    if (n > 0) SAFE_STOCK_DAYS = n;
+  } catch (e) {}
+}
+function saveSafeStockDays() {
+  try { localStorage.setItem(SAFE_STOCK_KEY, String(SAFE_STOCK_DAYS)); } catch (e) {}
+}
+loadSafeStockDays();
+
+// 입력창 숫자·위험 SKU 카드 문구 등 안전재고 기준일에 연동된 화면 요소를 동기화
+function applySafeStockToUI() {
+  const riskDays = Math.max(1, Math.floor(SAFE_STOCK_DAYS / 2));
+  const input = document.getElementById('safestock-input');
+  if (input) input.value = SAFE_STOCK_DAYS;
+  const kr = document.getElementById('kpi-sub-risk');
+  if (kr) kr.textContent = `DOC ${riskDays}일 이하 · 클릭하여 필터`;
+}
+applySafeStockToUI();
+
+// 안전재고 기준일 변경 → 이미 업로드된 1차(DOC)·2차(PO) 데이터를 재업로드 없이 전부 재계산
+function setSafeStockDays(val) {
+  const n = parseInt(val, 10);
+  if (!n || n < 1) { applySafeStockToUI(); return; }  // 값이 이상하면 이전 값으로 입력창만 복원
+  SAFE_STOCK_DAYS = Math.min(n, 180);
+  saveSafeStockDays();
+  applySafeStockToUI();
+  if (skuData.length) { reclassifyAllSkuData(); renderAll(); }
+  if (poRows.length)  { buildPOAnalysis(); renderPOAll(); }
+}
 
 // ── 제외 SKU (단종 등) ── 파일 업로드와 무관하게 브라우저에 영구 저장, 모든 테이블·보고서에서 공통 제외
 let excludedSkus = new Set();
@@ -775,6 +819,41 @@ function pickKey(rows, candidates) {
     if (k) return k;
   }
   return null;
+}
+
+// SAFE_STOCK_DAYS(안전재고 기준일)를 기준으로 SKU 한 건의 상태(품절/위험/주의/안전)와
+// 발주 권장 등급을 매긴다. 기준일이 바뀌면 재업로드 없이 이 함수만 다시 돌리면 된다.
+// 위험 임계값은 안전재고 기준일의 절반, 급상승 주의 구간은 1.5배로 비례 조정한다
+// (회사마다 안전재고를 7일/14일/30일 등 다르게 잡아도 위험·급상승 기준이 같이 따라오도록).
+function classifySku(d) {
+  const doc = d.doc_days;
+  const riskDays = Math.max(1, Math.floor(SAFE_STOCK_DAYS / 2));
+  const spikeWatchDays = Math.round(SAFE_STOCK_DAYS * 1.5);
+
+  let status;
+  if (d.current_stock_qty === 0 || d.is_oos) status = '품절';
+  else if (doc === null)       status = '안전';
+  else if (doc <= riskDays)    status = '위험';
+  else if (doc <= SAFE_STOCK_DAYS) status = '주의';
+  else                         status = '안전';
+
+  // 발주 권장: DOC 상태 + 출고 급상승을 함께 반영 (작을수록 우선)
+  let reorderBase, reorderLabel, reorderLevel;
+  if (status === '품절')      { reorderBase = 0; reorderLabel = '🔴 즉시 발주';        reorderLevel = 'urgent'; }
+  else if (status === '위험') { reorderBase = 1; reorderLabel = '🔴 즉시 발주';        reorderLevel = 'urgent'; }
+  else if (d.is_spike && doc !== null && doc <= spikeWatchDays)
+                              { reorderBase = 2; reorderLabel = '🟠 발주 권장(급상승)'; reorderLevel = 'soon'; }
+  else if (status === '주의') { reorderBase = 3; reorderLabel = '🟠 발주 준비';        reorderLevel = 'soon'; }
+  else                        { reorderBase = 4; reorderLabel = '🟢 충분';             reorderLevel = 'ok'; }
+  const tieDoc = (doc === null) ? -1 : doc;
+
+  d.doc_status = status;
+  d.reorder_label = reorderLabel;
+  d.reorder_level = reorderLevel;
+  d.reorder_rank = reorderBase + tieDoc / 100000;  // 같은 등급 내에서는 DOC 작은 순
+}
+function reclassifyAllSkuData() {
+  skuData.forEach(classifySku);
 }
 
 function processData(rows, fname) {
@@ -884,36 +963,19 @@ function processData(rows, fname) {
       expectedDate = d.toISOString().slice(0, 10);
     }
 
-    let status;
-    if (s.latest_stock === 0 || s.latest_oos) status = '품절';
-    else if (doc === null)   status = '안전';
-    else if (doc <= 7)       status = '위험';
-    else if (doc <= 14)      status = '주의';
-    else                     status = '안전';
-
-    // 발주 권장: DOC 상태 + 출고 급상승을 함께 반영 (작을수록 우선)
-    let reorderBase, reorderLabel, reorderLevel;
-    if (status === '품절')      { reorderBase = 0; reorderLabel = '🔴 즉시 발주';        reorderLevel = 'urgent'; }
-    else if (status === '위험') { reorderBase = 1; reorderLabel = '🔴 즉시 발주';        reorderLevel = 'urgent'; }
-    else if (isSpike && doc !== null && doc <= 21)
-                                { reorderBase = 2; reorderLabel = '🟠 발주 권장(급상승)'; reorderLevel = 'soon'; }
-    else if (status === '주의') { reorderBase = 3; reorderLabel = '🟠 발주 준비';        reorderLevel = 'soon'; }
-    else                        { reorderBase = 4; reorderLabel = '🟢 충분';             reorderLevel = 'ok'; }
-    const tieDoc = (doc === null) ? -1 : doc;
-    const reorderRank = reorderBase + tieDoc / 100000;  // 같은 등급 내에서는 DOC 작은 순
-
     return {
       sku_id: s.sku_id, sku_name: s.sku_name,
       product_category: s.product_category, sub_category: s.sub_category,
       detail_category: s.detail_category, brand: s.brand,
       order_status: s.order_status,
-      current_stock_qty: s.latest_stock, avg_daily_outbound: avg,
+      current_stock_qty: s.latest_stock, avg_daily_outbound: avg, is_oos: s.latest_oos,
       doc_days: doc, stockout_expected_date: expectedDate,
-      doc_status: status, velocity_rate: velocityRate, is_spike: isSpike,
+      velocity_rate: velocityRate, is_spike: isSpike,
       last_week_out: lastWeekSum, prev_week_out: prevWeekSum,
-      reorder_label: reorderLabel, reorder_level: reorderLevel, reorder_rank: reorderRank,
+      // doc_status·reorder_* 는 classifySku()가 SAFE_STOCK_DAYS(안전재고 기준일) 기준으로 채운다
     };
   });
+  reclassifyAllSkuData();
 
   // 필터 옵션 채우기
   const cats = [...new Set(skuData.map(d => d.product_category).filter(Boolean))].sort();
@@ -1124,9 +1186,10 @@ function buildReport() {
   r += `[쿠팡 1P 발주 보고서] 기준일 ${todayStr}\n`;
   r += `데이터: ${meta}\n`;
   r += `요약: 즉시발주 ${urgent.length}건 · 발주준비 ${soon.length}건 · 출고급상승 ${spikes.length}건 (전체 ${filtered.length} SKU)\n`;
-  r += `\n🔴 즉시 발주 필요 (DOC 7일 이하 / 품절) — ${urgent.length}건\n`;
+  const riskDaysTxt = Math.max(1, Math.floor(SAFE_STOCK_DAYS / 2));
+  r += `\n🔴 즉시 발주 필요 (DOC ${riskDaysTxt}일 이하 / 품절) — ${urgent.length}건\n`;
   r += urgent.length ? urgent.map(line).join('\n') : '  · 해당 없음';
-  r += `\n\n🟠 발주 준비 (DOC 14일 이하 또는 출고 급상승) — ${soon.length}건\n`;
+  r += `\n\n🟠 발주 준비 (DOC ${SAFE_STOCK_DAYS}일 이하 또는 출고 급상승) — ${soon.length}건\n`;
   r += soon.length ? soon.map(line).join('\n') : '  · 해당 없음';
   r += `\n\n📈 출고 급상승 (전주 출고량이 전전주 대비 50%↑) — ${spikes.length}건\n`;
   r += spikes.length ? spikes.map(line).join('\n') : '  · 해당 없음';
@@ -1408,15 +1471,15 @@ function processPOData(rows, fname) {
 // 계산한다(재고 포지션 방식). 입고예정일까지 남은 기간 동안의 소진분을 미리 빼버리면
 // (399+400)/45.8=17.4일치가 이미 있는데도 그 사이 소진량만큼을 다시 부족분으로 잡아
 // 추가발주 필요수량이 실제보다 부풀려지는 문제가 있었다.
-// 시뮬레이션 구간: 오늘 ~ (마지막 확정 입고예정일 + PO_MIN_DOC일). 확정 입고가 전혀
-// 없으면 "오늘"부터 PO_MIN_DOC일만 확인한다. 구간을 이렇게 제한하는 이유: 무한정 긴
+// 시뮬레이션 구간: 오늘 ~ (마지막 확정 입고예정일 + SAFE_STOCK_DAYS일). 확정 입고가 전혀
+// 없으면 "오늘"부터 SAFE_STOCK_DAYS일만 확인한다. 구간을 이렇게 제한하는 이유: 무한정 긴
 // 기간으로 보면 아무리 입고가 넉넉해도 언젠가는(수개월 뒤라도) 재고가 바닥나기 마련이라
 // "품절 위험"이 항상 참이 되어 버리기 때문이다.
 function simulateStock(startStock, avg, batchMap, todayStr) {
   const dates = Object.keys(batchMap).sort();
   const today = new Date(todayStr + 'T00:00:00');
   const lastBatchDate = dates.length ? new Date(dates[dates.length - 1] + 'T00:00:00') : today;
-  const horizonEnd = new Date(lastBatchDate); horizonEnd.setDate(horizonEnd.getDate() + PO_MIN_DOC);
+  const horizonEnd = new Date(lastBatchDate); horizonEnd.setDate(horizonEnd.getDate() + SAFE_STOCK_DAYS);
   const totalDays = Math.max(Math.round((horizonEnd - today) / 86400000), 0);
 
   let stock = startStock;
@@ -1463,10 +1526,10 @@ function buildPOAnalysis() {
       const positionStock = currentStock + pendingConfirmedTotal;
       docAfterArrival = Math.round(positionStock / avg);
       sim = simulateStock(currentStock, avg, batchMap, todayStr);   // 입고 전(사이) 품절 타이밍 위험만 별도 감지
-      needMoreOrder = sim.stockoutDate !== null || docAfterArrival <= PO_MIN_DOC;
-      // 재고 포지션이 PO_MIN_DOC(14일)치에 못 미치면, 그 부족분을 "추가 발주 필요수량"으로 제안
-      if (docAfterArrival <= PO_MIN_DOC) {
-        additionalOrderQty = Math.ceil(Math.max(avg * PO_MIN_DOC - positionStock, 0));
+      needMoreOrder = sim.stockoutDate !== null || docAfterArrival <= SAFE_STOCK_DAYS;
+      // 재고 포지션이 SAFE_STOCK_DAYS(안전재고 기준일)치에 못 미치면, 그 부족분을 "추가 발주 필요수량"으로 제안
+      if (docAfterArrival <= SAFE_STOCK_DAYS) {
+        additionalOrderQty = Math.ceil(Math.max(avg * SAFE_STOCK_DAYS - positionStock, 0));
       }
     }
 
@@ -1705,7 +1768,7 @@ function buildPOReport() {
   const lineNeedMore = d => {
     const docTxt = d.doc_after_arrival !== null ? `DOC ${d.doc_after_arrival}일` : 'DOC 계산불가';
     const stockoutTxt = d.stockout_date_sim ? `품절예상 ${d.stockout_date_sim}` : '';
-    const addTxt = d.additional_order_qty > 0 ? ` ⇒ 추가발주 ${d.additional_order_qty.toLocaleString()}개 권장(DOC ${PO_MIN_DOC}일 기준)` : ' ⇒ 발주 추가 검토';
+    const addTxt = d.additional_order_qty > 0 ? ` ⇒ 추가발주 ${d.additional_order_qty.toLocaleString()}개 권장(DOC ${SAFE_STOCK_DAYS}일 기준)` : ' ⇒ 발주 추가 검토';
     return `  · [${d.sku_id}] ${d.sku_name} → ${docTxt}${stockoutTxt ? ' · ' + stockoutTxt : ''}${addTxt} (미입고확정 ${d.pending_confirmed_total.toLocaleString()}개)`;
   };
   const lineNoOrder = d =>
