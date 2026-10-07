@@ -1697,7 +1697,7 @@ function buildPOReport() {
   const unconfirmed = filtered.filter(d => d.unconfirmed_total > 0)
                               .sort((a, b) => b.unconfirmed_total - a.unconfirmed_total);
   const needMore = filtered.filter(d => d.need_more_order)
-                           .sort((a, b) => (a.doc_after_arrival ?? 999) - (b.doc_after_arrival ?? 999));
+                           .sort((a, b) => (a.additional_order_qty ?? 0) - (b.additional_order_qty ?? 0));
   const noOrder = poNoOrderRisk;
 
   const lineUnconf = d =>
