@@ -1375,9 +1375,21 @@ function setMainView(v) {
 function numClean(v) { return Number(String(v ?? '').replace(/,/g, '')) || 0; }
 
 function normPODate(v) {
-  const s = String(v ?? '').trim();
+  if (v === null || v === undefined || v === '') return null;
+  // xlsx로 업로드했을 때 날짜 서식 셀이 "엑셀 일련번호"(예: 46300)로 그대로 읽히는 경우가 있다 —
+  // 이걸 못 걸러내면 입고예정일이 날짜가 아닌 숫자 문자열이 되어, 그 SKU의 입고 예정일 기반
+  // 계산(시뮬레이션·품절예상일 등)이 전부 조용히 어긋난다. 1900년 기준일로 환산해 보정한다.
+  if (typeof v === 'number' && v > 20000 && v < 90000) {
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    return new Date(epoch.getTime() + v * 86400000).toISOString().slice(0, 10);
+  }
+  const s = String(v).trim();
   if (!s) return null;
   if (/^\d{8}$/.test(s)) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
+  if (/^\d{4,5}(\.\d+)?$/.test(s)) {  // 문자열로 들어온 엑셀 일련번호도 동일하게 처리
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    return new Date(epoch.getTime() + parseFloat(s) * 86400000).toISOString().slice(0, 10);
+  }
   return s.slice(0, 10);
 }
 
@@ -1406,16 +1418,29 @@ function processPOData(rows, fname) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().slice(0, 10);
 
+  // 실제 다운로드 파일의 컬럼명이 조금씩 다를 수 있어(예: "SKU 명" vs "SKU 이름") 후보 중에서
+  // 찾는다 — 이름이 하나라도 안 맞으면 해당 값이 조용히 비어버려 계산이 통째로 어긋나기 때문에,
+  // 1차 데이터의 입고수량 컬럼처럼 여기서도 pickKey()로 느슨하게 매칭한다.
+  const kSkuId     = pickKey(rows, ['SKU ID', 'SKU Id', 'SKUID']) || 'SKU ID';
+  const kSkuName   = pickKey(rows, ['SKU 명', 'SKU 이름', 'SKU명', 'SKU이름', '상품명']) || 'SKU 명';
+  const kExpDate   = pickKey(rows, ['입고예정일', '입고 예정일', '입고예정일자']) || '입고예정일';
+  const kOrderQty  = pickKey(rows, ['발주수량', '발주 수량']) || '발주수량';
+  const kConfQty   = pickKey(rows, ['확정수량', '확정 수량']) || '확정수량';
+  const kRecvQty   = pickKey(rows, ['입고수량', '입고 수량']) || '입고수량';
+  const kWarehouse = pickKey(rows, ['물류센터', '물류 센터']) || '물류센터';
+  const kPoStatus  = pickKey(rows, ['발주현황', '발주 현황']) || '발주현황';
+  const kPoNo      = pickKey(rows, ['발주번호', '발주 번호']) || '발주번호';
+
   const map = {};
   const list = [];
   let staleCount = 0;
   rows.forEach(row => {
-    const idRaw = row['SKU ID']; if (idRaw === undefined || idRaw === null || idRaw === '') return;
+    const idRaw = row[kSkuId]; if (idRaw === undefined || idRaw === null || idRaw === '') return;
     const sku_id = String(idRaw).trim();
-    const expected_date = normPODate(row['입고예정일']);
-    const order_qty     = numClean(row['발주수량']);
-    const confirmed_qty = numClean(row['확정수량']);
-    const received_qty  = numClean(row['입고수량']);
+    const expected_date = normPODate(row[kExpDate]);
+    const order_qty     = numClean(row[kOrderQty]);
+    const confirmed_qty = numClean(row[kConfQty]);
+    const received_qty  = numClean(row[kRecvQty]);
 
     // 입고예정일이 이미 지났는데도 끝내 확정되지 않은 발주는 사실상 무산된 건으로 보고 집계에서 제외한다.
     // (계속 "확정 대기"로 잡아두면 이미 죽은 발주가 계속 알람에 남아 혼선을 준다)
@@ -1425,8 +1450,8 @@ function processPOData(rows, fname) {
     }
 
     const rec = {
-      po_no: row['발주번호'] ?? '', po_status: row['발주현황'] || '',
-      sku_id, sku_name: row['SKU 이름'] || '', warehouse: row['물류센터'] || '',
+      po_no: row[kPoNo] ?? '', po_status: row[kPoStatus] || '',
+      sku_id, sku_name: row[kSkuName] || '', warehouse: row[kWarehouse] || '',
       expected_date, order_qty, confirmed_qty, received_qty,
       unconfirmed_qty: Math.max(order_qty - confirmed_qty, 0),
     };
